@@ -42,7 +42,7 @@ $PolicyId = $null
 #######################################################################
 
 #Your API Key goes here
-$APIKey = 'C2B6702E-1872-4427-9EF1-7C41EAF8CB97' 
+$APIKey = '' 
 
 #Your Server URL
 $ServerUrl = "https://cb01.res.local"
