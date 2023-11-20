@@ -1,0 +1,28 @@
+#!/bin/bash
+ 
+api_key=""
+server_url="https://cb01.res.local"
+file_content=$(cat /tmp/FISMATag)
+echo $file_content
+ 
+#API Query
+ 
+header=""
+ 
+curl -H "Content-Type: application/json" -H "X-Auth-Token: $api_key" -k -X GET "$server_url/api/bit9platform/v1/computer?q=name:`hostname`&limit=-1"
+ 
+json_response=$(curl -H "Content-Type: application/json" -H "X-Auth-Token: $api_key" -k -X GET "$server_url/api/bit9platform/v1/computer?q=name:`hostname`")
+ 
+echo $json_response
+ 
+comp_id=$(grep -o '"id": *[^,}]*' <<< "$json_response" | awk -F: '{print $2}' | tr -d ' ')
+ 
+echo $comp_id
+ 
+data='{"id": "'$comp_id'", "computerTag": "'$file_content'"}'
+ 
+echo $data	
+ 
+json_response=$(curl -H "Content-Type: application/json" -H "X-Auth-Token: $api_key" -d "$data" -k -X POST "$server_url/api/bit9platform/v1/computer/")
+ 
+echo $json_response
