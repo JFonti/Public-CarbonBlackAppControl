@@ -7,8 +7,6 @@ echo $file_content
  
 #API Query
  
-header=""
- 
 curl -H "Content-Type: application/json" -H "X-Auth-Token: $api_key" -k -X GET "$server_url/api/bit9platform/v1/computer?q=name:`hostname`&limit=-1"
  
 json_response=$(curl -H "Content-Type: application/json" -H "X-Auth-Token: $api_key" -k -X GET "$server_url/api/bit9platform/v1/computer?q=name:`hostname`")
