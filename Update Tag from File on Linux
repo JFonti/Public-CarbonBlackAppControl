@@ -1,26 +1,32 @@
 #!/bin/bash
- 
+
+#Your API key here, key must be for a user with write permissions on computers.
 api_key=""
+
+#Your server URL here.
 server_url="https://cb01.res.local"
+
+#Your file containing the content to be added to the computer Tag
 file_content=$(cat /tmp/FISMATag)
 echo $file_content
  
-#API Query
- 
+#This first API Query simply checks the number of computers matching the hostname of this computer.
+#In this version of the script we do not do anything with this return. This is troubleshooting info only.
 curl -H "Content-Type: application/json" -H "X-Auth-Token: $api_key" -k -X GET "$server_url/api/bit9platform/v1/computer?q=name:`hostname`&limit=-1"
- 
+
+#Run the query again to get the full computer object returned.
 json_response=$(curl -H "Content-Type: application/json" -H "X-Auth-Token: $api_key" -k -X GET "$server_url/api/bit9platform/v1/computer?q=name:`hostname`")
- 
 echo $json_response
  
+#Grep the return for the ID:Number pair, awk the right hand side, trim the spaces.
 comp_id=$(grep -o '"id": *[^,}]*' <<< "$json_response" | awk -F: '{print $2}' | tr -d ' ')
- 
 echo $comp_id
  
+#This version of the script simply overwrites the current tag with the intended tag string.
+#Future improvement might be to test the computerTag from the json_response and append if not blank.
 data='{"id": "'$comp_id'", "computerTag": "'$file_content'"}'
- 
 echo $data	
  
+#This command actually posts the update to the CB Server. We capture the response for troubleshooting.
 json_response=$(curl -H "Content-Type: application/json" -H "X-Auth-Token: $api_key" -d "$data" -k -X POST "$server_url/api/bit9platform/v1/computer/")
- 
 echo $json_response
