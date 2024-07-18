@@ -1,0 +1,88 @@
+#######################################################################
+##Search for Zero Prev Publishers
+##Joe Fonti for Broadcom CB Customers
+##7/18/2024
+#######################################################################
+
+#Create a function to help us log to both disk and the Console.
+Function Write-Log{
+    param(
+             [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string] $LogStatement,
+
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [int] $LogLevel)
+
+    PROCESS{
+        if($LogLevel -le $global:logServerity){
+            Write-Host $LogStatement
+            if ($global:bLogToDisk){
+                try { 
+                    $LogStatement | Out-File -FilePath $global:LogPath -Append 
+                }catch{
+                    Write-Warning -Message "Unable to write LogFile."
+                }
+        }
+        }
+        
+    }
+}
+
+#Clear Vars
+$result = $null
+
+#######################################################################
+#Begin User Vars area
+#######################################################################
+
+#Your API Key goes here
+$APIKey = '' 
+
+#Your Server URL
+$ServerUrl = ""
+$ServerUrl = $ServerUrl.Trim()
+
+##### Logging Vars#########
+[bool]$global:bLogToDisk = $true
+#Integer value 0 Error, 1 Information, 2 Verbose
+[int]$global:logServerity = 1
+
+#Logging File Name, Given as a date time stamp
+$logFileName = (Get-Date -Format MM-dd-yyyy-hh-mm-ss).tostring() + ".log"
+
+#Your logging path here
+$global:LogPath = "C:\Temp\" + $logFileName
+#######################################################################
+#End User Vars area
+#######################################################################
+
+#Write a File Header
+#$LogStatement = "Attempting to move computers from: " + $Path + " to Policy: " + $PolicyName
+#Write-Log -LogStatement $LogStatement -LogLevel 0
+
+#Use TLS1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+#Create a Header object
+$Header = @{}
+$Header.Add("Content-Type",'application/json')
+$Header.Add("X-Auth-Token",$APIKey)
+
+#This script relies on structuring queries to the CB API
+#Read how to structure the query here: https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/#publisher
+$url = $ServerUrl + "/api/bit9platform/v1/publisher?q=signedFilesCount:0&q=hidden:False&q=acknowledged:False"
+Write-Log -LogStatement "URL is: $url" -LogLevel 2
+
+Try{
+    $Result = Invoke-RestMethod -Header $Header -Uri $Url -Method GET
+}Catch{
+    Write-Log -LogStatement $_ -LogLevel 0
+    Exit
+}
+
+$Result | Format-Table | Out-File -FilePath $global:LogPath -Append  
+
+
+
