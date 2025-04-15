@@ -1,0 +1,53 @@
+#This is a very script designed to hash all files in a directory and change the file approval status.
+#This is currently set to 'Ban' files, see fileState
+#This script should NOT be run in production without extensive modificaiton for logging and error handling.
+
+#Your API Key goes here
+$APIKey = '' 
+
+#Your Server URL
+$ServerUrl = ""
+$ServerUrl = $ServerUrl.Trim()
+
+#Use TLS1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+#Create a Header object
+$Header = @{}
+$Header.Add("Content-Type",'application/json')
+$Header.Add("X-Auth-Token",$APIKey)
+
+$UntrustedDirectory = "C:\Untrusted\"
+
+ForEach ($File in Get-ChildItem -Path "$UntrustedDirectory" -Recurse)
+{
+    $ID = $null
+
+    $Hash = (Get-FileHash $file.FullName -Algorithm SHA256).hash
+    
+    #Find the File Rule for the current file
+    #$hash = "7f42e9a14807b16649461eeaa4a7aefdc510fbdc24a714b9fa14eaa7e313aef6"
+    $url = $ServerUrl + "/api/bit9platform/v1/fileRule?q=hash:" + $hash
+    $Result = Invoke-RestMethod -Header $Header -Uri $Url -Method GET
+    $ID = $Result.id
+
+    if ([string]::IsNullOrEmpty($ID)){
+        Write-Host "No Rule exists for file," + $File + " nothing to do."
+        next
+    }
+
+    ###Begin prep for POST ing the update to the computer.
+    $Body = @{}
+    #$Body.add("id",$Result.id)
+    $Body.add("fileState",3)      # File state for this rule. Can be one of: 1=Unapproved 2=Approved  3=Banned
+    $Body.add("sourceType",5)     # Mechanism that created this rule. Can be one of: 1 = Manual  2 = Trusted Directory 3 = Reputation 4 = Imported 5 = External (API) 6 = Event Rule 7 = Application Template 8 = Unified Management 
+    #$Body.add("description","Test")
+
+
+    #Convert the body to JSON
+    $bodyJson = ConvertTo-Json $Body
+
+    $url = $ServerUrl + "/api/bit9platform/v1/fileRule/" + $ID
+
+    $Result = Invoke-RestMethod -Header $Header -Uri $Url -Method PUT -Body $bodyJson
+}
